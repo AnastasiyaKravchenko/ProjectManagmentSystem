@@ -9,6 +9,9 @@ public class Skill {
         this.description = description;
     }
 
+    public Skill() {
+    }
+
     public int getId() {
         return id;
     }

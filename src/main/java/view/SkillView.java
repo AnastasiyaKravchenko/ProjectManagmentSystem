@@ -1,7 +1,9 @@
 package view;
 
-import controller.SkillController;
+import dao.jdbc.SkillDAOImpl;
 import exceptions.DeleteException;
+import exceptions.ItemExistException;
+import exceptions.NoItemToUpdateException;
 import model.Skill;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,74 +12,14 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
-public class Menu {
-    private static final Logger LOGGER = LoggerFactory.getLogger(Menu.class);
+public class SkillView extends View {
+    private static final Logger LOGGER = LoggerFactory.getLogger(Skill.class);
 
     private static BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
     private static String input;
+    private SkillDAOImpl skillDAO = SkillDAOImpl.getInstance();
 
-    public Menu() {
-    }
-
-    public static void displayStartMenu() {
-        int choice = 0;
-        printLine();
-        System.out.println("What data you want to operate with?");
-        System.out.println("1 - Developers");
-        System.out.println("2 - Skills");
-        System.out.println("3 - Companies");
-        System.out.println("4 - Projects");
-        System.out.println("5 - Customers");
-        printExitMessage();
-        printLine();
-        System.out.print("Please enter your choice:");
-
-        try {
-            input = reader.readLine();
-        } catch (IOException e) {
-            LOGGER.error("IOException occurred:" + e.getMessage());
-            displayStartMenu();
-        }
-        isQuitInput();
-
-        try {
-            choice = Integer.valueOf(input);
-        } catch (NumberFormatException e) {
-            LOGGER.error("NumberFormatException occurred:" + e.getMessage());
-            System.out.println("An incorrect value. Please try again.");
-            displayStartMenu();
-        }
-
-        if (choice == 1) {
-            displayDevMenu();
-        } else if (choice == 2) {
-            displaySkillMenu();
-        } else if (choice == 3) {
-            displayCompanyMenu();
-        } else if (choice == 4) {
-            displayProjectsMenu();
-        } else if (choice == 5) {
-            displayCustomersMenu();
-        } else {
-            System.out.println("An incorrect value. Please try again.");
-            displayStartMenu();
-        }
-
-    }
-
-    private static void displayCustomersMenu() {
-
-    }
-
-    private static void displayProjectsMenu() {
-
-    }
-
-    private static void displayCompanyMenu() {
-
-    }
-
-    private static void displaySkillMenu() {
+    void displaySkillMenu() {
         int choice = 0;
         printLine();
         System.out.println("Please select option:");
@@ -96,7 +38,7 @@ public class Menu {
             LOGGER.error("IOException occurred:" + e.getMessage());
             displaySkillMenu();
         }
-        isQuitInput();
+        isQuitInput(input, LOGGER);
 
         try {
             choice = Integer.valueOf(input);
@@ -107,7 +49,7 @@ public class Menu {
         }
 
         if (choice == 1) {
-            SkillController.getAll();
+            skillDAO.getAll();
             displaySkillMenu();
         } else if (choice == 2) {
             insertSkill();
@@ -116,25 +58,27 @@ public class Menu {
         } else if (choice == 4) {
             deleteSkill();
         } else if (choice == 5) {
-            displayStartMenu();
+            new ConsoleHelper().displayStartMenu();
         } else {
             System.out.println("An incorrect value. Please try again.");
-            displayStartMenu();
+            new ConsoleHelper().displayStartMenu();
         }
 
     }
 
-    private static void updateSkill() {
+    private void updateSkill() {
+        Skill skill = new Skill();
         printLine();
         System.out.print("Please enter skill ID to update: ");
         try {
             input = reader.readLine();
         } catch (IOException e) {
             LOGGER.error("IOException occurred:" + e.getMessage());
-            displaySkillMenu();
+            new ConsoleHelper().displayStartMenu();
         }
+
         try {
-            int id = Integer.valueOf(input);
+            skill.setId(Integer.valueOf(input));
             System.out.print("Please input new description of skill:");
             try {
                 input = reader.readLine();
@@ -142,29 +86,37 @@ public class Menu {
                 LOGGER.error("IOException occurred:" + e.getMessage());
                 displaySkillMenu();
             }
-            SkillController.update(new Skill(id,input));
+            skillDAO.update(skill);
             displaySkillMenu();
         } catch (NumberFormatException e) {
             LOGGER.error("NumberFormatException occurred:" + e.getMessage());
             System.out.println("An incorrect value. Please try again.");
             displaySkillMenu();
+        } catch (NoItemToUpdateException e) {
+            LOGGER.error("NoItemToUpdateException" + e.getMessage());
+            System.out.println("There is no skill to update with requested id:" + skill.getId());
+            displaySkillMenu();
         }
     }
 
-    private static void insertSkill() {
+    private void insertSkill() {
         printLine();
+        Skill skill = new Skill();
         System.out.print("Please enter the description of new skill: ");
         try {
             input = reader.readLine();
         } catch (IOException e) {
             LOGGER.error("IOException occurred:" + e.getMessage());
-            displaySkillMenu();
         }
-        SkillController.insert(input);
+        try {
+            skillDAO.save(skill);
+        } catch (ItemExistException e) {
+            System.out.print("Cannot add " + skill + ". There is already skill with id:" + skill.getId());
+        }
         displaySkillMenu();
     }
 
-    private static void deleteSkill() {
+    private void deleteSkill() {
         printLine();
         System.out.print("Please enter skill ID to delete: ");
         try {
@@ -174,34 +126,15 @@ public class Menu {
             displaySkillMenu();
         }
         try {
-            SkillController.delete(Integer.valueOf(input));
-            displaySkillMenu();
+            skillDAO.delete(skillDAO.getById(Integer.valueOf(input)));
         } catch (NumberFormatException e) {
             LOGGER.error("NumberFormatException occurred:" + e.getMessage());
             System.out.println("An incorrect value. Please try again.");
-            displaySkillMenu();
-        } catch (DeleteException e){
+        } catch (DeleteException e) {
             LOGGER.error(e.getMessage());
-            displaySkillMenu();
         }
-    }
-
-    private static void displayDevMenu() {
-
-    }
-
-    private static void isQuitInput() {
-        if (input.toLowerCase().equals("quit")) {
-            LOGGER.info("Application shutdown");
-            System.exit(0);
-        }
-    }
-
-    private static void printExitMessage() {
-        System.out.println("To close application please enter \"Quit\"");
-    }
-
-    private static void printLine() {
-        System.out.println("\n===============================================\n");
+        displaySkillMenu();
     }
 }
+
+
