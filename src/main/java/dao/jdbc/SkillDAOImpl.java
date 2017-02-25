@@ -16,7 +16,7 @@ public class SkillDAOImpl extends SkillDAO {
 
     private static SkillDAOImpl instance;
 
-    private final static Logger LOGGER = LoggerFactory.getLogger(SkillDAO.class);
+    private final static Logger LOGGER = LoggerFactory.getLogger(SkillDAOImpl.class);
 
     private final static String UPDATE_SQL_QUERY = "UPDATE skills SET skill_description=? WHERE skill_id=?";
     private static final String DELETE_SQL_QUERY = "DELETE FROM skills WHERE skill_id = ? AND skill_description=?";
@@ -121,8 +121,7 @@ public class SkillDAOImpl extends SkillDAO {
     @Override
     public Skill getById(Integer id) {
         try (Connection connection = DBConnectionPool.getConnection()) {
-            PreparedStatement statement =
-                    connection.prepareStatement(GET_BY_ID_SQL_QUERY);
+            PreparedStatement statement = connection.prepareStatement(GET_BY_ID_SQL_QUERY);
             statement.setInt(1, id);
             ResultSet resultSet = statement.executeQuery();
 
