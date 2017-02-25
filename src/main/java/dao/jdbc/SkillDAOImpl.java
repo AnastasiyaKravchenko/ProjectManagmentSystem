@@ -146,8 +146,7 @@ public class SkillDAOImpl extends SkillDAO {
             ResultSet resultSet = statement.executeQuery(GET_ALL_SQL_QUERY);
 
             while (resultSet.next()) {
-                Skill skill = createSkill(resultSet);
-                skillList.add(skill);
+                skillList.add(createSkill(resultSet));
             }
 
         } catch (SQLException e) {

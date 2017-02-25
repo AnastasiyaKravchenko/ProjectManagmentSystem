@@ -9,10 +9,7 @@ import model.Skill;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,11 +29,11 @@ public class DeveloperDAOImpl extends DeveloperDAO {
     private final static String UPDATE_SQL_QUERY = "UPDATE developers SET skill_description=? WHERE skill_id=?";
     private static final String DELETE_SQL_QUERY = "DELETE FROM skills WHERE skill_id = ? AND skill_description=?";
     private static final String INSERT_SQL_QUERY = "INSERT INTO skills(skill_id, skill_description) VALUES (?, ?)";
-    private static final String GET_ALL_SQL_QUERY = "SELECT * FROM ";
-    private static final String GET_ALL_SKILLS_BY_DEV_ID = "SELECT skill_id, skill_description from skills as sk" +
-            "inner join dev_skills as dsk on skill_id = dsk.skills_id" +
-            "WHERE dsk.developer_id = 17;";
-    private static final String GET_BY_ID_SQL_QUERY = "SELECT * FROM skills WHERE skill_id = ?";
+    private static final String GET_ALL_SQL_QUERY = "SELECT * FROM developers";
+    private static final String GET_ALL_SKILLS_BY_DEV_ID = "SELECT skill_id, skill_description FROM skills AS sk " +
+            "INNER JOIN dev_skills AS dsk ON skill_id = dsk.skills_id " +
+            "WHERE dsk.developer_id = ?;";
+    private static final String GET_BY_ID_SQL_QUERY = "SELECT * FROM developers WHERE id = ?";
 
 
     @Override
@@ -56,15 +53,15 @@ public class DeveloperDAOImpl extends DeveloperDAO {
 
     @Override
     public Developer getById(Integer id) {
-        try(Connection connection = DBConnectionPool.getConnection()) {
+        try (Connection connection = DBConnectionPool.getConnection()) {
             PreparedStatement statement = connection.prepareStatement(GET_BY_ID_SQL_QUERY);
             statement.setInt(1, id);
             ResultSet resultSet = statement.executeQuery();
 
-            if (resultSet.next()){
+            if (resultSet.next()) {
                 try {
                     return createDeveloper(resultSet);
-                } catch (SQLException e){
+                } catch (SQLException e) {
                     LOGGER.error("Exception occurred while getting developer data: " + e.getMessage());
                     return null;
                 }
@@ -80,20 +77,33 @@ public class DeveloperDAOImpl extends DeveloperDAO {
     }
 
 
-
     @Override
     public List<Developer> getAll() {
-        return null;
+        List<Developer> developers = new ArrayList<>();
+
+        try (Connection connection = DBConnectionPool.getConnection()) {
+            Statement statement = connection.createStatement();
+            ResultSet resultSet = statement.executeQuery(GET_ALL_SQL_QUERY);
+
+            while (resultSet.next()){
+                developers.add(createDeveloper(resultSet));
+            }
+
+        } catch (SQLException e) {
+            LOGGER.error("Exception occurred while connecting to DB");
+            throw new RuntimeException(e);
+        }
+        return developers;
     }
 
     private List<Skill> getDeveloperSkills(Integer devId) throws SQLException {
         List<Skill> skills = new ArrayList<>();
-        try (Connection connection = DBConnectionPool.getConnection() ){
-            PreparedStatement statement = connection.prepareStatement(GET_BY_ID_SQL_QUERY);
+        try (Connection connection = DBConnectionPool.getConnection()) {
+            PreparedStatement statement = connection.prepareStatement(GET_ALL_SKILLS_BY_DEV_ID);
             statement.setInt(1, devId);
             ResultSet resultSet = statement.executeQuery();
 
-            while (resultSet.next()){
+            while (resultSet.next()) {
                 skills.add(new Skill(resultSet.getInt("skill_id"), resultSet.getString("skill_description")));
             }
         } catch (SQLException e) {
