@@ -13,7 +13,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 
 public class SkillView extends View {
-    private static final Logger LOGGER = LoggerFactory.getLogger(Skill.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SkillView.class);
 
     private static BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
     private static String input;

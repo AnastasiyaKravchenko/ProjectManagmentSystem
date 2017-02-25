@@ -11,7 +11,6 @@ public class Developer {
     private String city;
     private Date joinDate;
     private List<Skill> skills;
-    private Project project;
 
     public int getId() {
         return id;
@@ -69,13 +68,6 @@ public class Developer {
         this.skills = skills;
     }
 
-    public Project getProject() {
-        return project;
-    }
-
-    public void setProject(Project project) {
-        this.project = project;
-    }
 
     @Override
     public String toString() {
@@ -87,7 +79,6 @@ public class Developer {
                 ", city='" + city + '\'' +
                 ", joinDate=" + joinDate +
                 ", skills=" + skills +
-                ", project=" + project +
                 '}';
     }
 }

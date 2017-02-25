@@ -22,7 +22,7 @@ public class SkillDAOImpl extends SkillDAO {
     private static final String DELETE_SQL_QUERY = "DELETE FROM skills WHERE skill_id = ? AND skill_description=?";
     private static final String INSERT_SQL_QUERY = "INSERT INTO skills(skill_id, skill_description) VALUES (?, ?)";
     private static final String GET_ALL_SQL_QUERY = "SELECT * FROM skills";
-    private static final String LOAD_SQL_QUERY = "SELECT * FROM skills WHERE skill_id = ?";
+    private static final String GET_BY_ID_SQL_QUERY = "SELECT * FROM skills WHERE skill_id = ?";
 
     public static SkillDAOImpl getInstance() {
         if (instance == null) {
@@ -122,7 +122,7 @@ public class SkillDAOImpl extends SkillDAO {
     public Skill getById(Integer id) {
         try (Connection connection = DBConnectionPool.getConnection()) {
             PreparedStatement statement =
-                    connection.prepareStatement(LOAD_SQL_QUERY);
+                    connection.prepareStatement(GET_BY_ID_SQL_QUERY);
             statement.setInt(1, id);
             ResultSet resultSet = statement.executeQuery();
 
