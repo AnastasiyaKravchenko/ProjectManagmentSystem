@@ -12,7 +12,7 @@ public class DBConnectionPool {
     private static BasicDataSource dataSource = new BasicDataSource();
     private static final Logger LOGGER = LoggerFactory.getLogger(DBConnectionPool.class);
     private static final String DRIVER_CLASS_NAME = "com.mysql.cj.jdbc.Driver";
-    private static final String DB_URL = "jdbc:mysql://localhost:3306/javaee_hw2";
+    private static final String DB_URL = "jdbc:mysql://localhost:3306/javaee_hw2?useSSL=false&serverTimezone=UTC";
     private static final String USER = "user";
     private static final String PASSWORD = "qwe123";
 

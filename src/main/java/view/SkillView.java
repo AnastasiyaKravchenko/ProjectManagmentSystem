@@ -49,8 +49,7 @@ public class SkillView extends View {
         }
 
         if (choice == 1) {
-            skillDAO.getAll();
-            displaySkillMenu();
+            displayAll();
         } else if (choice == 2) {
             insertSkill();
         } else if (choice == 3) {
@@ -64,6 +63,11 @@ public class SkillView extends View {
             new ConsoleHelper().displayStartMenu();
         }
 
+    }
+
+    private void displayAll() {
+        skillDAO.getAll().stream().sorted((s1, s2) -> s1.getId() - s2.getId()).forEach(System.out::println);
+        displaySkillMenu();
     }
 
     private void updateSkill() {
@@ -84,30 +88,35 @@ public class SkillView extends View {
                 input = reader.readLine();
             } catch (IOException e) {
                 LOGGER.error("IOException occurred:" + e.getMessage());
-                displaySkillMenu();
             }
             skillDAO.update(skill);
-            displaySkillMenu();
         } catch (NumberFormatException e) {
             LOGGER.error("NumberFormatException occurred:" + e.getMessage());
             System.out.println("An incorrect value. Please try again.");
-            displaySkillMenu();
         } catch (NoItemToUpdateException e) {
             LOGGER.error("NoItemToUpdateException" + e.getMessage());
             System.out.println("There is no skill to update with requested id:" + skill.getId());
-            displaySkillMenu();
         }
+        displaySkillMenu();
     }
 
     private void insertSkill() {
         printLine();
         Skill skill = new Skill();
-        System.out.print("Please enter the description of new skill: ");
         try {
+            System.out.print("Please enter ID of new skill: ");
             input = reader.readLine();
+            skill.setId(Integer.valueOf(input));
+            System.out.print("Please enter description of new skill: ");
+            input = reader.readLine();
+            skill.setDescription(input);
+        } catch (NumberFormatException e) {
+            LOGGER.error("NumberFormatException occurred:" + e.getMessage());
+            System.out.println("An incorrect value. Please try again.");
         } catch (IOException e) {
             LOGGER.error("IOException occurred:" + e.getMessage());
         }
+
         try {
             skillDAO.save(skill);
         } catch (ItemExistException e) {
