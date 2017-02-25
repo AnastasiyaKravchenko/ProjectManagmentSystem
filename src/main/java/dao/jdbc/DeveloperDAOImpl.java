@@ -116,10 +116,11 @@ public class DeveloperDAOImpl extends DeveloperDAO {
 
     private Developer createDeveloper(ResultSet resultSet) throws SQLException {
         Developer developer = new Developer();
-        developer.setId(resultSet.getInt("developer_id"));
+        developer.setId(resultSet.getInt("id"));
         developer.setName(resultSet.getString("name"));
         developer.setAge(resultSet.getInt("age"));
         developer.setCountry(resultSet.getString("country"));
+        developer.setCity(resultSet.getString("city"));
         developer.setJoinDate(resultSet.getDate("join_date"));
         developer.setSkills(getDeveloperSkills(developer.getId()));
         return developer;
