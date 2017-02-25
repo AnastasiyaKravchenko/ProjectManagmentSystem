@@ -132,13 +132,12 @@ public class SkillView extends View {
             input = reader.readLine();
         } catch (IOException e) {
             LOGGER.error("IOException occurred:" + e.getMessage());
-            displaySkillMenu();
         }
         try {
             skillDAO.delete(skillDAO.getById(Integer.valueOf(input)));
         } catch (NumberFormatException e) {
             LOGGER.error("NumberFormatException occurred:" + e.getMessage());
-            System.out.println("An incorrect value. Please try again.");
+            System.out.println("An incorrect skill ID value. Please try again.");
         } catch (DeleteException e) {
             LOGGER.error(e.getMessage());
         }
