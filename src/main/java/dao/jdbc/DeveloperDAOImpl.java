@@ -57,7 +57,7 @@ public class DeveloperDAOImpl extends DeveloperDAO {
                     statement.setInt(3, item.getAge());
                     statement.setString(4, item.getCountry());
                     statement.setString(5, item.getCity());
-                    statement.setDate(6, (Date) item.getJoinDate());
+                    statement.setDate(6, new java.sql.Date(item.getJoinDate().getTime()));
                     statement.executeQuery();
                     insertDeveloperSkills(item, connection);
                     connection.commit();

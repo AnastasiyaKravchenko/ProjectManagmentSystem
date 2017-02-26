@@ -13,6 +13,8 @@ import org.slf4j.LoggerFactory;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -67,7 +69,7 @@ public class DeveloperView extends View {
             new ConsoleHelper().displayStartMenu();
         } else {
             System.out.println("An incorrect value. Please try again.");
-            new ConsoleHelper().displayStartMenu();
+            displayDevMenu();
         }
     }
 
@@ -120,8 +122,11 @@ public class DeveloperView extends View {
             developer.setCountry(reader.readLine());
             System.out.print("Please enter City of new developer: ");
             developer.setCity(reader.readLine());
-            System.out.print("Please enter Join Date of new developer (format dd-mm-yyyy: ");
-            developer.setJoinDate(new Date(reader.readLine()));
+            System.out.print("Please enter Join Date of new developer (in format dd.mm.yyyy): ");
+            SimpleDateFormat format = new SimpleDateFormat("dd.MM.yyyy");
+            input =reader.readLine();
+            Date date = format.parse(input);
+            developer.setJoinDate(date);
             developer.setSkills(setDeveloperSkills(developer));
 
             try {
@@ -129,7 +134,7 @@ public class DeveloperView extends View {
             } catch (ItemExistException e) {
                 System.out.print("Cannot add " + developer + ". There is already skill with id:" + developer.getId());
             }
-        } catch (NumberFormatException e) {
+        } catch (NumberFormatException | ParseException e){
             LOGGER.error("NumberFormatException occurred:" + e.getMessage());
             System.out.println("An incorrect value. Please try again.");
         } catch (IOException e) {
@@ -145,11 +150,12 @@ public class DeveloperView extends View {
         while (true) {
             System.out.println("\nPlease choose id of skill to add as " +
                     "developer skill from list (to stop adding enter \"stop\"):");
+            skillDAO.getAll().stream().sorted((s1, s2) -> s1.getId() - s2.getId()).forEach(System.out::println);
+            System.out.print("Add skill with ID:");
             input = reader.readLine();
             if (input.toLowerCase().equals("stop")){
              break;
             } else {
-                skillDAO.getAll().stream().sorted((s1, s2) -> s1.getId() - s2.getId()).forEach(System.out::println);
                 skills.add(skillDAO.getById(Integer.valueOf(input)));
             }
         }
