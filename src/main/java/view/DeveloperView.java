@@ -1,24 +1,30 @@
 package view;
 
 import dao.jdbc.DeveloperDAOImpl;
+import dao.jdbc.SkillDAOImpl;
 import exceptions.DeleteException;
 import exceptions.ItemExistException;
 import exceptions.NoItemToUpdateException;
 import model.Developer;
+import model.Skill;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 public class DeveloperView extends View {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DeveloperView.class);
 
-    private static BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-    private static String input;
+    private BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+    private String input;
     private DeveloperDAOImpl developerDAO = DeveloperDAOImpl.getInstance();
+    private SkillDAOImpl skillDAO = SkillDAOImpl.getInstance();
 
     public void displayDevMenu() {
         int choice = 0;
@@ -100,26 +106,54 @@ public class DeveloperView extends View {
         displayDevMenu();
     }
 
-    private void insertDev() {//TODO
+    private void insertDev() {
         printLine();
         Developer developer = new Developer();
         try {
-            System.out.print("Please enter ID of new skill: ");
-            input = reader.readLine();
-            developer.setId(Integer.valueOf(input));
+            System.out.print("Please enter ID of new developer: ");
+            developer.setId(Integer.valueOf(reader.readLine()));
+            System.out.print("Please enter Name of new developer: ");
+            developer.setName(reader.readLine());
+            System.out.print("Please enter Age of new developer: ");
+            developer.setAge(Integer.valueOf(reader.readLine()));
+            System.out.print("Please enter Country of new developer: ");
+            developer.setCountry(reader.readLine());
+            System.out.print("Please enter City of new developer: ");
+            developer.setCity(reader.readLine());
+            System.out.print("Please enter Join Date of new developer (format dd-mm-yyyy: ");
+            developer.setJoinDate(new Date(reader.readLine()));
+            developer.setSkills(setDeveloperSkills(developer));
+
+            try {
+                developerDAO.save(developer);
+            } catch (ItemExistException e) {
+                System.out.print("Cannot add " + developer + ". There is already skill with id:" + developer.getId());
+            }
         } catch (NumberFormatException e) {
             LOGGER.error("NumberFormatException occurred:" + e.getMessage());
             System.out.println("An incorrect value. Please try again.");
         } catch (IOException e) {
             LOGGER.error("IOException occurred:" + e.getMessage());
         }
-
-        try {
-            developerDAO.save(developer);
-        } catch (ItemExistException e) {
-            System.out.print("Cannot add " + developer + ". There is already skill with id:" + developer.getId());
-        }
         displayDevMenu();
+    }
+
+    private List<Skill> setDeveloperSkills(Developer developer) throws IOException {
+        List<Skill> skills = new ArrayList<>();
+        printLine();
+
+        while (true) {
+            System.out.println("\nPlease choose id of skill to add as " +
+                    "developer skill from list (to stop adding enter \"stop\"):");
+            input = reader.readLine();
+            if (input.toLowerCase().equals("stop")){
+             break;
+            } else {
+                skillDAO.getAll().stream().sorted((s1, s2) -> s1.getId() - s2.getId()).forEach(System.out::println);
+                skills.add(skillDAO.getById(Integer.valueOf(input)));
+            }
+        }
+        return skills;
     }
 
     private void deleteDev() {//TODO
@@ -140,5 +174,4 @@ public class DeveloperView extends View {
         }
         displayDevMenu();
     }
-
 }
