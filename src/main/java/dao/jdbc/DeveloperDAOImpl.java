@@ -26,19 +26,67 @@ public class DeveloperDAOImpl extends DeveloperDAO {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(DeveloperDAOImpl.class);
 
-    private final static String UPDATE_SQL_QUERY = "UPDATE developers SET skill_description=? WHERE skill_id=?";
-    private static final String DELETE_SQL_QUERY = "DELETE FROM skills WHERE skill_id = ? AND skill_description=?";
-    private static final String INSERT_SQL_QUERY = "INSERT INTO skills(skill_id, skill_description) VALUES (?, ?)";
-    private static final String GET_ALL_SQL_QUERY = "SELECT * FROM developers";
-    private static final String GET_ALL_SKILLS_BY_DEV_ID = "SELECT skill_id, skill_description FROM skills AS sk " +
-            "INNER JOIN dev_skills AS dsk ON skill_id = dsk.skills_id " +
-            "WHERE dsk.developer_id = ?;";
-    private static final String GET_BY_ID_SQL_QUERY = "SELECT * FROM developers WHERE id = ?";
+    private final static String UPDATE_SQL_QUERY =
+            "UPDATE developers SET skill_description=? WHERE skill_id=?";
+    private static final String DELETE_SQL_QUERY =
+            "DELETE FROM skills WHERE skill_id = ? AND skill_description=?";
+    private static final String INSERT_SQL_QUERY =
+            "INSERT INTO developers(id, name, age, country, city, join_date) VALUES (?, ?, ?, ?, ?, ?, ?)";
+    private static final String INSERT_DEPENDENCY_DEV_SKILL =
+            "INSERT INTO dev_skills (developer_id, skills_id) VALUES (?, ?)";
+    private static final String GET_ALL_SQL_QUERY =
+            "SELECT * FROM developers";
+    private static final String GET_ALL_SKILLS_BY_DEV_ID =
+            "SELECT skill_id, skill_description FROM skills AS sk " +
+                    "INNER JOIN dev_skills AS dsk ON skill_id = dsk.skills_id " +
+                    "WHERE dsk.developer_id = ?;";
+    private static final String GET_BY_ID_SQL_QUERY =
+            "SELECT * FROM developers WHERE id = ?";
 
 
     @Override
     public void save(Developer item) throws ItemExistException {
+        try (Connection connection = DBConnectionPool.getConnection()) {
+            Savepoint beforeDevInsert = connection.setSavepoint();
+            if (getById(item.getId()) == null) {
+                try {
+                    connection.setAutoCommit(false);
+                    PreparedStatement statement = connection.prepareStatement(INSERT_SQL_QUERY);
+                    statement.setInt(1, item.getId());
+                    statement.setString(2, item.getName());
+                    statement.setInt(3, item.getAge());
+                    statement.setString(4, item.getCountry());
+                    statement.setString(5, item.getCity());
+                    statement.setDate(6, (Date) item.getJoinDate());
+                    statement.executeQuery();
+                    insertDeveloperSkills(item, connection);
+                    connection.commit();
+                } catch (SQLException e) {
+                    connection.rollback(beforeDevInsert);
+                    LOGGER.error("Exception occurred inserting Developer \"" + item + "\" to DB");
+                    throw new RuntimeException(e);
+                } finally {
+                    connection.setAutoCommit(true);
+                }
+            } else {
+                LOGGER.info("Cannot add " + item + ". There is already developer with id:" + item.getId());
+                throw new ItemExistException();
+            }
 
+        } catch (SQLException e) {
+            LOGGER.error("Exception occurred while connecting to DB");
+            throw new RuntimeException(e);
+        }
+
+    }
+
+    private void insertDeveloperSkills(Developer item, Connection connection) throws SQLException {
+        PreparedStatement statement = connection.prepareStatement(INSERT_DEPENDENCY_DEV_SKILL);
+        for (Skill skill : item.getSkills()) {
+            statement.setInt(1, item.getId());
+            statement.setInt(2, skill.getId());
+            statement.executeQuery();
+        }
     }
 
     @Override
@@ -85,7 +133,7 @@ public class DeveloperDAOImpl extends DeveloperDAO {
             Statement statement = connection.createStatement();
             ResultSet resultSet = statement.executeQuery(GET_ALL_SQL_QUERY);
 
-            while (resultSet.next()){
+            while (resultSet.next()) {
                 developers.add(createDeveloper(resultSet));
             }
 
@@ -110,7 +158,6 @@ public class DeveloperDAOImpl extends DeveloperDAO {
             LOGGER.error("Exception occurred while getting skills for developer");
             throw e;
         }
-
         return skills;
     }
 
@@ -125,4 +172,6 @@ public class DeveloperDAOImpl extends DeveloperDAO {
         developer.setSkills(getDeveloperSkills(developer.getId()));
         return developer;
     }
+
+
 }
