@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-public class DeveloperView extends View {
+class DeveloperView extends View {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DeveloperView.class);
 
@@ -28,7 +28,7 @@ public class DeveloperView extends View {
     private DeveloperDAOImpl developerDAO = DeveloperDAOImpl.getInstance();
     private SkillDAOImpl skillDAO = SkillDAOImpl.getInstance();
 
-    public void displayDevMenu() {
+    void displayDevMenu() {
         int choice = 0;
         printLine();
         System.out.println("Please select option:");
@@ -114,6 +114,10 @@ public class DeveloperView extends View {
         try {
             System.out.print("Please enter ID of new developer: ");
             developer.setId(Integer.valueOf(reader.readLine()));
+            if (developerDAO.isExistDeveloper(developer.getId())){
+                System.out.print("There is already developer with id: " + developer.getId());
+                displayDevMenu();
+            }
             System.out.print("Please enter Name of new developer: ");
             developer.setName(reader.readLine());
             System.out.print("Please enter Age of new developer: ");
@@ -127,12 +131,13 @@ public class DeveloperView extends View {
             input =reader.readLine();
             Date date = format.parse(input);
             developer.setJoinDate(date);
-            developer.setSkills(setDeveloperSkills(developer));
+
 
             try {
+                developer.setSkills(setDeveloperSkills());
                 developerDAO.save(developer);
             } catch (ItemExistException e) {
-                System.out.print("Cannot add " + developer + ". There is already skill with id:" + developer.getId());
+                System.out.print("Cannot add " + developer + ". There is already developer with id:" + developer.getId());
             }
         } catch (NumberFormatException | ParseException e){
             LOGGER.error("NumberFormatException occurred:" + e.getMessage());
@@ -143,7 +148,7 @@ public class DeveloperView extends View {
         displayDevMenu();
     }
 
-    private List<Skill> setDeveloperSkills(Developer developer) throws IOException {
+    private List<Skill> setDeveloperSkills() throws IOException {
         List<Skill> skills = new ArrayList<>();
         printLine();
 

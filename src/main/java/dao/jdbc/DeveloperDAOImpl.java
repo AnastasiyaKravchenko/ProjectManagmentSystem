@@ -26,12 +26,16 @@ public class DeveloperDAOImpl extends DeveloperDAO {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(DeveloperDAOImpl.class);
 
-    private final static String UPDATE_SQL_QUERY =
-            "UPDATE developers SET skill_description=? WHERE skill_id=?";
+//    private final static String UPDATE_SQL_QUERY =
+//            "UPDATE developers SET skill_description=? WHERE skill_id=?";
     private static final String DELETE_SQL_QUERY =
-            "DELETE FROM skills WHERE skill_id = ? AND skill_description=?";
+            "DELETE FROM developers WHERE id = ? ";
+    private static final String DELETE_DEV_SKILLS_QUERY =
+            "DELETE FROM dev_skills WHERE developer_id = ?";
+    private static final String DELETE_DEV_PROJECTS_QUERY =
+            "DELETE FROM dev_projects WHERE developer_id = ?";
     private static final String INSERT_SQL_QUERY =
-            "INSERT INTO developers(id, name, age, country, city, join_date) VALUES (?, ?, ?, ?, ?, ?, ?)";
+            "INSERT INTO developers(id, name, age, country, city, join_date) VALUES (?, ?, ?, ?, ?, ?)";
     private static final String INSERT_DEPENDENCY_DEV_SKILL =
             "INSERT INTO dev_skills (developer_id, skills_id) VALUES (?, ?)";
     private static final String GET_ALL_SQL_QUERY =
@@ -47,10 +51,9 @@ public class DeveloperDAOImpl extends DeveloperDAO {
     @Override
     public void save(Developer item) throws ItemExistException {
         try (Connection connection = DBConnectionPool.getConnection()) {
-            Savepoint beforeDevInsert = connection.setSavepoint();
-            if (getById(item.getId()) == null) {
+            connection.setAutoCommit(false);
+            if (!isExistDeveloper(item.getId())) {
                 try {
-                    connection.setAutoCommit(false);
                     PreparedStatement statement = connection.prepareStatement(INSERT_SQL_QUERY);
                     statement.setInt(1, item.getId());
                     statement.setString(2, item.getName());
@@ -58,21 +61,19 @@ public class DeveloperDAOImpl extends DeveloperDAO {
                     statement.setString(4, item.getCountry());
                     statement.setString(5, item.getCity());
                     statement.setDate(6, new java.sql.Date(item.getJoinDate().getTime()));
-                    statement.executeQuery();
+                    statement.execute();
                     insertDeveloperSkills(item, connection);
                     connection.commit();
                 } catch (SQLException e) {
-                    connection.rollback(beforeDevInsert);
+                    connection.rollback();
                     LOGGER.error("Exception occurred inserting Developer \"" + item + "\" to DB");
                     throw new RuntimeException(e);
-                } finally {
-                    connection.setAutoCommit(true);
                 }
             } else {
                 LOGGER.info("Cannot add " + item + ". There is already developer with id:" + item.getId());
                 throw new ItemExistException();
             }
-
+            connection.setAutoCommit(true);
         } catch (SQLException e) {
             LOGGER.error("Exception occurred while connecting to DB");
             throw new RuntimeException(e);
@@ -82,16 +83,53 @@ public class DeveloperDAOImpl extends DeveloperDAO {
 
     private void insertDeveloperSkills(Developer item, Connection connection) throws SQLException {
         PreparedStatement statement = connection.prepareStatement(INSERT_DEPENDENCY_DEV_SKILL);
-        for (Skill skill : item.getSkills()) {
-            statement.setInt(1, item.getId());
-            statement.setInt(2, skill.getId());
-            statement.executeQuery();
+        if (item.getSkills() != null) {
+            for (Skill skill : item.getSkills()) {
+                statement.setInt(1, item.getId());
+                statement.setInt(2, skill.getId());
+                statement.execute();
+            }
         }
     }
 
     @Override
     public void delete(Developer item) throws DeleteException {
+        if (isExistDeveloper(item.getId())) {
+            try (Connection connection = DBConnectionPool.getConnection()) {
+                connection.setAutoCommit(false);
+                PreparedStatement statement = connection.prepareStatement(DELETE_SQL_QUERY);
+                try {
+                    deleteDevSkills(item.getId(), connection);
+                    deleteDevFromProjects(item.getId(), connection);
+                    statement.setInt(1, item.getId());
+                    statement.execute();
+                    connection.commit();
+                } catch (SQLException e){
+                    connection.rollback();
+                    LOGGER.error("Can not delete skill with id: " + item.getId() +". " + e.getMessage());
+                    throw new DeleteException();
+                } finally {
+                    connection.setAutoCommit(true);
+                }
+            } catch (SQLException e) {
+                LOGGER.error("Exception occurred while connecting to DB");
+                throw new RuntimeException(e);
+            }
+        }
+    }
 
+    private void deleteDevFromProjects(int id, Connection connection) throws SQLException {
+        PreparedStatement statement = connection.prepareStatement(DELETE_DEV_PROJECTS_QUERY);
+        statement.setInt(1, id);
+        statement.execute();
+        connection.commit();
+    }
+
+    private void deleteDevSkills(int id, Connection connection) throws SQLException {
+        PreparedStatement statement = connection.prepareStatement(DELETE_DEV_SKILLS_QUERY);
+        statement.setInt(1, id);
+        statement.execute();
+        connection.commit();
     }
 
     @Override
@@ -171,6 +209,15 @@ public class DeveloperDAOImpl extends DeveloperDAO {
         developer.setJoinDate(resultSet.getDate("join_date"));
         developer.setSkills(getDeveloperSkills(developer.getId()));
         return developer;
+    }
+
+    public boolean isExistDeveloper(int developerID) {
+        for (Developer developer : getAll()) {
+            if (developer.getId() == developerID) {
+                return true;
+            }
+        }
+        return false;
     }
 
 
