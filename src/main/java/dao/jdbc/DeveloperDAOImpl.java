@@ -26,8 +26,8 @@ public class DeveloperDAOImpl extends DeveloperDAO {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(DeveloperDAOImpl.class);
 
-//    private final static String UPDATE_SQL_QUERY =
-//            "UPDATE developers SET skill_description=? WHERE skill_id=?";
+    private final static String UPDATE_SQL_QUERY =
+            "UPDATE developers SET name = ?, age = ?, country = ?, city = ?, join_date = ? WHERE id=?";
     private static final String DELETE_SQL_QUERY =
             "DELETE FROM developers WHERE id = ? ";
     private static final String DELETE_DEV_SKILLS_QUERY =
@@ -64,6 +64,7 @@ public class DeveloperDAOImpl extends DeveloperDAO {
                     statement.execute();
                     insertDeveloperSkills(item, connection);
                     connection.commit();
+                    LOGGER.info("Developer: " + item + ". Was successfully added to DB.");
                 } catch (SQLException e) {
                     connection.rollback();
                     LOGGER.error("Exception occurred inserting Developer \"" + item + "\" to DB");
@@ -90,6 +91,7 @@ public class DeveloperDAOImpl extends DeveloperDAO {
                 statement.execute();
             }
         }
+        LOGGER.info("Skills for developer with ID: " + item.getId() + " were added.");
     }
 
     @Override
@@ -123,6 +125,7 @@ public class DeveloperDAOImpl extends DeveloperDAO {
         statement.setInt(1, id);
         statement.execute();
         connection.commit();
+        LOGGER.info("Developer with ID: " + id + " deleted from all projects.");
     }
 
     private void deleteDevSkills(int id, Connection connection) throws SQLException {
@@ -130,11 +133,39 @@ public class DeveloperDAOImpl extends DeveloperDAO {
         statement.setInt(1, id);
         statement.execute();
         connection.commit();
+        LOGGER.info("All skills for developer with id: " + id + " were deleted.");
     }
 
     @Override
     public void update(Developer item) throws NoItemToUpdateException {
+            try(Connection connection = DBConnectionPool.getConnection()) {
+                connection.setAutoCommit(false);
+                PreparedStatement statement = connection.prepareStatement(UPDATE_SQL_QUERY);
 
+                try {
+                    statement.setString(1, item.getName());
+                    statement.setInt(2, item.getAge());
+                    statement.setString(3, item.getCountry());
+                    statement.setString(4, item.getCity());
+                    statement.setDate(5, new java.sql.Date(item.getJoinDate().getTime()));
+                    statement.setInt(6, item.getId());
+                    deleteDevSkills(item.getId(), connection);
+                    insertDeveloperSkills(item, connection);
+                    statement.execute();
+                    connection.commit();
+                    LOGGER.info("Developer with ID: " + item.getId() + " was updated.");
+                } catch (SQLException e){
+                    connection.rollback();
+                    LOGGER.error(e.getMessage());
+                } finally {
+                    connection.setAutoCommit(true);
+                }
+
+
+            } catch (SQLException e) {
+                LOGGER.error("Exception occurred while connecting to DB");
+                throw new RuntimeException(e);
+            }
     }
 
     @Override
